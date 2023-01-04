@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <link rel="icon" href="/favicon-192.png" type="image/png">
+        <link rel="apple-touch-icon" href="/favicon-192.png"/>
+        <meta name="apple-mobile-web-app-capable" content="yes"/>
+        <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+        <title>cline</title>
+        <link href="style.css" rel="stylesheet">
+        <link href="prism.css" rel="stylesheet">
+    </head>
+
+    <body>
+        <main>
+            <div id="cmdcont" class="line prompt">
+                <p id="cmdprev" class="cmdcode"></p>
+                <p id="cmdline" class="cmdedit" contenteditable="plaintext-only" ></p>
+                <p id="cmdpost"></p>
+            </div>
+
+            <ul id="history">
+                <li class="line li-plain">Connecting...</li>
+            </ul>
+
+            <header>
+                <p id="banner">
+                    <span id="banner-title">cline v0.0.1 - </span>
+                    <span id="banner-state">Stopped</span>
+                </p>
+    
+                <p>
+                    <span class="btn" id="hdr-btn-reset">↻</span>
+                    <span class="btn">🛈</span>
+                </p>
+            </header>
+        </main>
+
+        <template id="log">
+            <li class="line li-plain">
+                <span class="line-content"></span>
+
+                <span class="line-buttons"></span>
+            </li>
+        </template>
+    </body>
+
+    <script src="src/prism.js"></script>
+    <script type="module" src="src/repl.js"></script>
+</html>
