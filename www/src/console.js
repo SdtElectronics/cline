@@ -62,6 +62,9 @@ export class Console {
                     const msg = input.innerText;
                     this.onsubmit(msg);
                 }
+            } else if(ev.key === 'Tab') {
+                this.insertTab();
+                ev.preventDefault();
             } else if (ev.key === 'ArrowDown') {
                 /* navigate through history when caret hit boundary */
                 if(!this.linehist.onLastLine()) {
@@ -74,22 +77,12 @@ export class Console {
                     if (offset == sel.focusOffset) {
                         const msg = this.linehist.move(-1);
                         this.onchange(msg);
-                        //this.moveCaret2End();
                     } else {
                         sel.removeAllRanges();
                         sel.addRange(prevCaretPos);
                     }
                 }
                 
-                /*
-                setTimeout(() => {
-                    if(window.getSelection().getRangeAt(0).compareBoundaryPoints(
-                        Range.START_TO_START, prevCaretPos) == 0) {
-                        if(this.linehist.onLastLine()) this.linehist.edit(input.innerText);
-                        const msg = this.linehist.move(ev.key === 'ArrowDown' ? -1 : 1);
-                        this.onchange(msg);
-                    }
-                }, 0);*/
             } else if(ev.key === 'ArrowUp') {
                 if(!this.linehist.onFirstLine()) {
                     const sel = window.getSelection();
@@ -99,10 +92,11 @@ export class Console {
                     const offset = sel.focusOffset;
                     sel.modify("move","backward","character");
                     if (offset == sel.focusOffset) {
+                        ev.preventDefault();
+                        ev.stopPropagation();                       // Avoid scrolling up
                         if(this.linehist.onLastLine()) this.linehist.edit(input.innerText);
                         const msg = this.linehist.move(1);
                         this.onchange(msg);
-                        //this.moveCaret2End();
                     } else {
                         sel.removeAllRanges();
                         sel.addRange(prevCaretPos);
@@ -184,8 +178,17 @@ export class Console {
         this.inputWrapper.style.filter = "grayscale(1)";
     }
 
+    enabledInput() {
+        return this.input.contentEditable == "plaintext-only";
+    }
+
     editRawHTML(elem, msg) {
         elem.querySelector(".line-content").innerHTML = msg;
+    }
+
+    insertTab() {
+        this.input.focus();
+        document.execCommand('insertHTML', false, '&#009');
     }
 
     getCaretPosition_(parent, node, offset, stat) {
@@ -237,11 +240,13 @@ export class Console {
         sel.removeAllRanges();
 
         if(pos == undefined) {
-            const range = document.createRange();//Create a range (a range is a like the selection but invisible)
-            range.selectNodeContents(this.input);//Select the entire contents of the element with the range
-            // range.collapse(false);
+            setTimeout(() => {
+                const range = document.createRange();//Create a range (a range is a like the selection but invisible)
+                range.selectNodeContents(this.input);//Select the entire contents of the element with the range
+                range.collapse(false);
 
-            sel.addRange(range);
+                sel.addRange(range);
+            }, 0);
             return;
         }
 

@@ -21,11 +21,21 @@ header {
     background-color: #fff;
     display: flex;
     justify-content: space-between;
+    flex-wrap: nowrap;
 }
 
-header>p{
+header>p {
     padding: 0.48rem 1.2rem 0.36rem 0.9rem;
     line-height: 1.32rem;
+    white-space: nowrap;
+}
+
+header>div {
+ flex-grow: 1;
+}
+
+a, a:visited {
+    color: inherit;
 }
 
 .btn {
@@ -41,7 +51,6 @@ header>p{
 #banner:hover {
     cursor: pointer;
     background-color: #F0F0F0;
-    border-right: solid 1px #F0F0F0;
 }
 
 #banner-title {
@@ -52,6 +61,12 @@ header>p{
 #banner-state {
     font-weight: bold;
     color: orangered;
+}
+
+#banner-hints {
+    margin-left: -0.6rem;
+    color: #666;
+    -webkit-text-stroke: 0.18px #333;
 }
 
 main {
@@ -122,15 +137,11 @@ header>p {
 
 .line-content{
     flex-grow: 1;
-    white-space: pre-wrap;
 }
 
-.cmdcode {
-    white-space: pre-wrap;
-}
-
-.cmdedit {
+.line-content, .cmdcode, .cmdedit {
     white-space: break-spaces;
+    tab-size: 4;
 }
 
 .cmdedit:focus {

@@ -48,7 +48,7 @@ export class Clined {
  
             case 'e':
                 this.handler.onrecoverable(
-                    "Uncaught user exception:", evBody);
+                    "Uncaught exception:", evBody);
                 break;
 
             case 'f':
@@ -74,8 +74,7 @@ export class Clined {
                 break;
 
             case 'k':
-                this.handler.onrecoverable(
-                    "Execution aborted. Possible security policy violation", "");
+                this.handler.onkilled();
                 break;
 
             case 'l':
