@@ -1,8 +1,9 @@
 import { Console } from "./console.js"
-import { Clined, INTERPRET, SOFTRESET, DISCARDML } from "./protocol.js"
+import { Clined } from "./protocol.js"
 import { copyright, tips } from "./strings.js"
 
 let service;
+let inactiveTim = null;
 
 const banner = document.getElementById("banner");
 const bannerState = document.getElementById("banner-state");
@@ -22,11 +23,13 @@ const FAILCONN = 0;
 const ACCIDENT = 1;
 const MANRESET = 2;
 const INACTIVE = 3;
+const LONGCONN = 4;
+const FATALERR = 5;
 
 let closeCode = FAILCONN;
 let responded = false;
 
-const serviceAddr = "ws://192.168.137.60:7770";
+const serviceAddr = `wss://${location.host}/ws`;
 
 const recoverSend = () => {
     const lastContent = con.lastSent().firstElementChild;
@@ -68,6 +71,7 @@ const handler = {
     },
 
     onfatal: e => {
+        closeCode = FATALERR;
         con.error(e);
     },
 
@@ -105,12 +109,18 @@ const handler = {
         con.recoverInput();
     },
 
-    onwarning: msg => {
-        con.warning(msg);
+    onlongconn: () => {
+        closeCode = LONGCONN;
     },
 
-    onsleep: () => {
-        closeCode = INACTIVE;
+    onrejected: msg => {
+        con.reject(con.lastSent());
+        con.error(msg);
+        con.recoverInput();
+    },
+
+    onwarning: msg => {
+        con.warning(msg);
     },
 
     onopen: () => {
@@ -133,6 +143,13 @@ const handler = {
 
             case INACTIVE:
                 con.warning("Server disconnected due to inactivity");
+                break;
+
+            case LONGCONN:
+                con.warning("Session reached maximum duration");
+                break;
+
+            case FATALERR:
                 break;
         }
         cliDiv.style.display = "none";
@@ -178,9 +195,16 @@ const bannerConnect = () => {
 con.onsubmit = msg => {
     if(msg.trim().length != 0){
         con.send(cliTxt.innerHTML, msg);
-        service.send(`${INTERPRET}${msg}`);
+        service.interpret(msg);
         con.disableInput();
         responded = false;
+        if(!!inactiveTim) clearTimeout(inactiveTim);
+        inactiveTim = setTimeout(() => {
+            if(service.getState() == WebSocket.OPEN) {
+                service.close();
+                closeCode = INACTIVE;
+            }
+        }, 480000);
     }
 };
 
@@ -189,11 +213,7 @@ con.onchange = (msg, prevCaretPos) => {
     con.setCaretPosition(prevCaretPos);
 };
 
-document.getElementById("hdr-btn-reset").onclick = () => {
-    if(service.getState() == WebSocket.OPEN) {
-        service.send(`${SOFTRESET}`);
-    }
-};
+document.getElementById("hdr-btn-reset").onclick = () => service.softreset();
 
 document.getElementById("hdr-btn-about").onclick = () => {
     con.info("");
@@ -211,5 +231,7 @@ hints.onmouseenter = () => {
 hints.onmouseleave = () => {
     hints.innerHTML = "Tips";
 };
+
+setInterval(() => service.keepalive(), 60000);
 
 document.body.setAttribute('spellcheck', false);

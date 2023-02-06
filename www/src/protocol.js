@@ -1,3 +1,9 @@
+/* request code */
+const INTERPRET = 0;
+const SOFTRESET = 1;
+const DISCARDML = 2;
+const KEEPALIVE = 9;
+
 export class Clined {
     constructor(address, handler) {
         this.connected = false;
@@ -78,7 +84,7 @@ export class Clined {
                 break;
 
             case 'l':
-                this.handler.onwarning("Too much data written to stdout. Discarding...");
+                this.handler.onlongconn();
                 break;
 
             case 'm':
@@ -91,8 +97,6 @@ export class Clined {
                 break;
 
             case 'o':
-                this.handler.onrecoverable(
-                    "Invalid input: too long", "");
                 break;
 
             case 'p':
@@ -104,11 +108,10 @@ export class Clined {
                 break;
 
             case 'r':
-                
+                this.handler.onrejected(evBody);
                 break;
 
             case 's':
-                this.handler.onsleep();
                 break;
 
             case 't':
@@ -142,7 +145,7 @@ export class Clined {
                 break;
 
             default:
-                this.handler.ondata(evBody);
+                console.log(`Unknown response: ${evBody}`);
         }
     }
 
@@ -155,12 +158,23 @@ export class Clined {
         }
     }
 
+    interpret(msg) {
+        this.send(`${INTERPRET}${msg}`);
+    }
+
+    softreset() {
+        if(this.getState() == WebSocket.OPEN) {
+            this.send(`${SOFTRESET}`);
+        }
+    }
+
+    keepalive() {
+        if(this.getState() == WebSocket.OPEN) {
+            this.send(`${KEEPALIVE}`);
+        }
+    }
+
     getState() {
         return this.server.readyState;
     }
 }
-
-/* request code */
-export const INTERPRET = 0;
-export const SOFTRESET = 1;
-export const DISCARDML = 2;
