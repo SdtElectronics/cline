@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <string_view>
 
+#include <sys/uio.h>
 #include <unistd.h>
 
 namespace cline::utils {
@@ -41,11 +42,6 @@ int countThreads(int fd) {
     if(len == -1) return -1;
     buf[len] = 0;
     return atoi(buf);
-}
-
-[[noreturn]] void lastWords(int fd, std::string_view msg) {
-    write(fd, msg.data(), msg.size());
-    exit(EXIT_FAILURE);
 }
 
 } // namespace cline

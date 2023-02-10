@@ -21,6 +21,7 @@
 
 #include "./processor.h"
 #include "./protocol.h"
+#include "./ring2.h"
 #include "./timer.h"
 #include "./usock.h"
 #include "./utils.h"
@@ -37,26 +38,37 @@ enum Fds {tim = 0, msg, out, idCnt};
 int main(int argc, char *argv[]) {
     if(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) != 0) /* unreachable */;
 
-    const int efd = STDERR_FILENO;
+    cline::Ring2 lineRec(4);
+    lineRec.reserve(4096);
+    const auto lastWords = [&](std::string_view msg) {
+        const int efd = STDERR_FILENO;
+        char buf[16];
+        int size = snprintf(buf, sizeof(buf), "cline[%d]: ", getpid());
+        if(size > 0) vecWrite(efd, std::string_view(buf, size), msg,
+                 "last processed lines:\n"sv,
+                 lineRec.tail(), lineRec.head());
+        exit(EXIT_FAILURE);
+    };
+
     const int pfd = open(getenv("CLINE_TASKS"), O_RDONLY, 0);
-    if(pfd == -1) lastWords(efd, "Open task monitor failed\n"sv);
+    if(pfd == -1) lastWords("Open tasks monitor failed\n"sv);
 
     cline::USock usock; cline::Timer timer; cline::Worker worker;
     /* ===================  Set up events and poll  =================== */
     std::array<pollfd, idCnt> pollfds = {};
 
     const int tfd = timer.init();
-    if(tfd == -1) lastWords(efd, "Create timerfd failed\n"sv);
+    if(tfd == -1) lastWords("Create timerfd failed\n"sv);
     pollfds[tim].fd = tfd;
     pollfds[tim].events = POLLIN;
 
     const int sfd = usock.bind(getenv("CLINE_SOCK"));
-    if(sfd < 0) lastWords(efd, "Bind unix socket failed\n"sv);
+    if(sfd < 0) lastWords("Bind unix socket failed\n"sv);
     pollfds[msg].fd = sfd;
     pollfds[msg].events = POLLIN | POLLHUP;
 
     const int ofd = redirFD(STDOUT_FILENO); // some dup magic to capture stdout
-    if(ofd < 0) lastWords(efd, "Set up stdout capture failed\n"sv);
+    if(ofd < 0) lastWords("Set up stdout capture failed\n"sv);
     pollfds[out].fd = ofd;
     pollfds[out].events = POLLIN;
 
@@ -69,7 +81,7 @@ int main(int argc, char *argv[]) {
     llvm::PrettyStackTraceProgram X(argc, argv);
 
     cling::Interpreter interpreter(argc, argv);
-    if (!interpreter.isValid()) lastWords(efd, "Set up interpreter failed\n"sv);
+    if (!interpreter.isValid()) lastWords("Set up interpreter failed\n"sv);
 
     cline::Processor processor(usock, interpreter);
 
@@ -83,7 +95,7 @@ int main(int argc, char *argv[]) {
 
     while(true) try{
         int ready = poll(pollfds.data(), idCnt, idleTime);
-        if (ready == -1) lastWords(efd, "Error when polling\n"sv);
+        if (ready == -1) lastWords("Error when polling\n"sv);
             /* EINTR would never happen unless SA_RESTART is set
                for EFAULT, EINVAL, ENOMEM, there's nothing we can do */
 
@@ -93,7 +105,7 @@ int main(int argc, char *argv[]) {
             if(worker.isAlive()) { /* timeout */
                 if(!worker.cancel()) {
                     usock.send(getMsgHdr(mFATAL), "Thread cancellation failed"sv);
-                    lastWords(efd, "Thread cancellation failed\n"sv);
+                    lastWords("Thread cancellation failed\n"sv);
                 }
                 usock.send(getMsgHdr(mTIMEOUT));
             } else {               /* joined */
@@ -116,9 +128,10 @@ int main(int argc, char *argv[]) {
                 } else {
                     if(countThreads(pfd) != 1) {
                         usock.send(getMsgHdr(mFATAL), "Untracked thread(s) detected"sv);
-                        lastWords(efd, "Untracked thread(s) detected\n"sv);
+                        lastWords("Untracked thread(s) detected\n"sv);
                     }
 
+                    lineRec.append(buf + 1, len - 1);
                     worker.spawn(processor.process(std::string_view(buf + 1, len - 1)));
                     timer.set(blockTime);
                 }
@@ -131,7 +144,7 @@ int main(int argc, char *argv[]) {
                     timer.reset();     // it can't fail so don't check the rc
                     if(!worker.cancel()) {
                         usock.send(getMsgHdr(mFATAL), "Thread cancellation failed"sv);
-                        lastWords(efd, "Thread cancellation failed\n"sv);
+                        lastWords("Thread cancellation failed\n"sv);
                     }
                     usock.send(getMsgHdr(mKILLED));
                 } else {
@@ -174,7 +187,7 @@ int main(int argc, char *argv[]) {
         } else {
             short err = 0;
             for(pollfd& p: pollfds) err |= p.revents;
-            if(err & POLLERR) lastWords(efd, "poll received POLLERR\n"sv);
+            if(err & POLLERR) lastWords("poll received POLLERR\n"sv);
 
             /* poll timed out */
             usock.send(getMsgHdr(mWARNING), "Inactive session expired"sv);
@@ -182,9 +195,9 @@ int main(int argc, char *argv[]) {
         }
 
     } catch(cline::SySExcept& e) {
-        lastWords(efd, "Syscall error\n"sv); // TODO: say something about the error
+        lastWords("Syscall error\n"sv); // TODO: say something about the error
     } catch(std::exception& e) {
-        lastWords(efd, "Caught exception\n"sv); // TODO: same as above
+        lastWords("Caught exception\n"sv); // TODO: same as above
     }
 
     eventLoopEnd: ;
