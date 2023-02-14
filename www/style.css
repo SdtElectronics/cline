@@ -1,3 +1,47 @@
+:root {
+    --header-bkgr: #fff;
+    --header-text: #555;
+    --normal-bkgr: #fff;
+    --normal-text: #111;
+    --normal-rule: #f0f0f0;
+    --error-bkgr: #290000;
+    --error-text: #F00;
+    --error-rule: #FFD6D6;
+    --warn-bkgr: #FFFBE5;
+    --warn-text: #5C3C00;
+    --warn-rule: #FFF5C2;
+    --info-bkgr: #ecf1f8;
+    --info-text: #126;
+    --info-rule: #ccdef5;
+    --bright-text: #666;
+    --normal-stroke: #000;
+    --bright-stroke: #333;
+    --button-plain: #ccc;
+    --button-hover: #666;
+}
+
+[data-theme="dark"] {
+    --header-bkgr: #17191b;
+    --header-text: #aaa;
+    --normal-bkgr: #1d1f21;
+    --normal-text: #c5c8c6;
+    --normal-rule: #363636;
+    --error-bkgr: #290000;
+    --error-text: #ff8080;
+    --error-rule: #5c0000;
+    --warn-bkgr: #332b00;
+    --warn-text: #f2ab26;
+    --warn-rule: #665500;
+    --info-bkgr: #013;
+    --info-text: #bcd;
+    --info-rule: #126;
+    --bright-text: #999;
+    --normal-stroke: #fff;
+    --bright-stroke: #eee;
+    --button-plain: #444;
+    --button-hover: #999;
+}
+
 html {
     width: 100vw;
 }
@@ -6,8 +50,9 @@ body {
     width: 100vw;
     height: 100vh;
     margin: 0px;
+    background-color: var(--normal-bkgr);
     font-family: Menlo,consolas,monospace;
-    color: #111;
+    color: var(--normal-text);
 }
 
 header {
@@ -17,8 +62,8 @@ header {
     width: 100vw;
     padding-left: 0.9rem;
     box-sizing: border-box;
-    border-bottom: solid 1px #F0F0F0;
-    background-color: #fff;
+    border-bottom: solid 1px var(--normal-rule);
+    background-color: var(--header-bkgr);
     display: flex;
     justify-content: space-between;
     flex-wrap: nowrap;
@@ -31,7 +76,7 @@ header>p {
 }
 
 header>div {
- flex-grow: 1;
+    flex-grow: 1;
 }
 
 a, a:visited {
@@ -40,22 +85,23 @@ a, a:visited {
 
 .btn {
     font-size: 1.35rem;
-    color: #ccc;
+    color: var(--button-plain);
+    margin: 0px 0.06rem;
 }
 
 .btn:hover {
     cursor: pointer;
-    color: #666;
+    color: var(--button-hover);
 }
 
 #banner:hover {
     cursor: pointer;
-    background-color: #F0F0F0;
+    background-color: var(--normal-rule);
 }
 
 #banner-title {
-    color: #555;
-    -webkit-text-stroke: 0.48px #000;
+    color: var(--header-text);
+    -webkit-text-stroke: 0.48px var(--normal-stroke);
 }
 
 #banner-state {
@@ -65,8 +111,8 @@ a, a:visited {
 
 #banner-hints {
     margin-left: -0.6rem;
-    color: #666;
-    -webkit-text-stroke: 0.18px #333;
+    color: var(--bright-text);
+    -webkit-text-stroke: 0.18px var(--bright-stroke);
 }
 
 main {
@@ -144,6 +190,12 @@ header>p {
     tab-size: 4;
 }
 
+.cmdedit>code:before{
+    font-size: 1rem;
+    content: 'auto s = "hello"';
+    color: var(--bright-text);
+}
+
 .cmdedit:focus {
     outline: none;
 }
@@ -172,8 +224,8 @@ header>p {
 }
 
 .line-pending {
-    color: #999;
-    border-bottom: solid 1px #F0F0F0;
+    color: var(--bright-text);
+    border-bottom: solid 1px var(--normal-rule);
 }
 
 .line-pending:before {
@@ -196,7 +248,7 @@ header>p {
 }
 
 .line-sent {
-    border-bottom: solid 1px #F0F0F0;
+    border-bottom: solid 1px var(--normal-rule);
 }
 
 .line-sent:before {
@@ -213,7 +265,7 @@ header>p {
 }
 
 .line-received {
-    border-bottom: solid 1px #F0F0F0;
+    border-bottom: solid 1px var(--normal-rule);
 }
 
 .line-received:before {
@@ -230,9 +282,9 @@ header>p {
 }
 
 .line-info {
-    background-color: #ecf1f8;
-    border-bottom: solid 1px #ccdef5;;
-    color: #126;
+    background-color: var(--info-bkgr);
+    border-bottom: solid 1px var(--info-rule);
+    color: var(--info-text);
 }
 
 .line-info:before {
@@ -249,9 +301,9 @@ header>p {
 }
 
 .line-warning {
-    background-color: #FFFBE5;
-    border-bottom: solid 1px #FFF5C2;
-    color: #5C3C00;
+    background-color: var(--warn-bkgr);
+    border-bottom: solid 1px var(--warn-rule);
+    color: var(--warn-text);
 }
 
 .line-warning:before {
@@ -268,9 +320,9 @@ header>p {
 }
 
 .line-error {
-    background-color: #FFF0F0;
-    border-bottom: solid 1px #FFD6D6;
-    color: #F00;
+    background-color: var(--error-bkgr);
+    border-bottom: solid 1px var(--error-rule);
+    color: var(--error-text);
 }
 
 .line-error:before {

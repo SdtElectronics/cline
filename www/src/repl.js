@@ -5,6 +5,11 @@ import { copyright, tips } from "./strings.js"
 let service;
 let inactiveTim = null;
 
+const highlighter = document.createElement("link");
+highlighter.media = "screen,print";
+highlighter.type  = "text/css";
+highlighter.rel   = "stylesheet";
+
 const banner = document.getElementById("banner");
 const bannerState = document.getElementById("banner-state");
 
@@ -18,6 +23,19 @@ const con = new Console(consoleRoot, cliTxt, cliDiv);
 
 const connectingPrompt = consoleRoot.firstElementChild;
 
+const switchTheme = (htmlAttr, cssDir) => {
+    highlighter.href = cssDir;
+    document.documentElement.setAttribute("data-theme", htmlAttr);
+}
+
+if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    switchTheme("dark", "prism-dark.css");
+} else {
+    switchTheme("", "prism-light.css");
+}
+
+document.getElementsByTagName('head')[0].appendChild(highlighter);
+
 /* close code */
 const FAILCONN = 0;
 const ACCIDENT = 1;
@@ -29,7 +47,8 @@ const FATALERR = 5;
 let closeCode = FAILCONN;
 let responded = false;
 
-const serviceAddr = `wss://${location.host}/ws`;
+const wssProtocol = location.protocol == "https:" ? "wss:" : "ws:";
+const serviceAddr = `${wssProtocol}//${location.host}/ws`;
 
 const recoverSend = () => {
     const lastContent = con.lastSent().firstElementChild;
@@ -79,8 +98,10 @@ const handler = {
         connectingPrompt.remove();
         cliDiv.style.display = "block";
         cliPre.innerHTML = "";
-        cliTxt.innerHTML = "";
         con.recoverInput();
+        const hint = document.createElement("code");
+        hint.classList.add("smpcode");
+        cliTxt.append(hint);
         bannerConnect();
         responded = true;
     },

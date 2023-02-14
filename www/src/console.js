@@ -167,7 +167,7 @@ export class Console {
     }
 
     recoverInput() {
-        this.input.contentEditable = "plaintext-only";
+        this.input.contentEditable = "true";
         this.inputWrapper.style.filter = "";
         this.input.innerHTML = "";
         this.input.focus();

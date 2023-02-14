@@ -4,20 +4,27 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
         <meta name="viewport" content="width=device-width,initial-scale=1"/>
-        <link rel="shortcut icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='218' height='161' viewBox='-0.5 -0.5 218 161'%3E%3Cg fill='%2369d' pointer-events='all'%3E%3Cpath d='M116.42 151.66c-33.61 17.19-74.67 8.54-98.49-20.76-23.82-29.29-23.92-71.25-.23-100.65C41.38.84 82.4-8 116.09 9.03l-15.52 30.7c-19.2-9.7-42.58-4.66-56.08 12.1-13.5 16.76-13.45 40.67.13 57.37 13.58 16.7 36.98 21.63 56.14 11.83Z'/%3E%3Cpath d='m144.438 98.781-39.235-46.76 14.646-26.649 46.307 55.186Z' stroke='%2333f' stroke-miterlimit='10'/%3E%3Cpath d='m144.438 62.079-39.235 46.76 14.646 26.649 46.307-55.186Zm50.372 36.709-39.235-46.76 14.647-26.65 46.306 55.187Z' stroke='%2333f' stroke-miterlimit='10'/%3E%3Cpath d='m194.81 62.072-39.235 46.76 14.647 26.65 46.306-55.187Z' stroke='%2333f' stroke-miterlimit='10'/%3E%3C/g%3E%3C/svg%3E">
+        <link rel="shortcut icon" href="./favicon.svg" type="image/svg+xml">
         <meta name="apple-mobile-web-app-capable" content="yes"/>
         <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
         <meta name="description" content="The online REPL for C/C++"/>
         <title>cline - online C/C++ interpreter</title>
+        <meta property="og:title" content="cline - online C/C++ interpreter"/>
+        <meta property="og:description" content="Ideas into reality, one line at a time."/>
+        <meta property="og:url" content="https://cppcli.net/"/>
+        <meta property="og:site_name" content="cline"/>
+        <meta property="og:type" content="website"/>
+        <meta name="twitter:title" content="cline - online C/C++ interpreter"/>
+        <meta name="twitter:description" content="Ideas into reality, one line at a time."/>
+        <meta name="twitter:url" content="https://cppcli.net/"/>
         <link href="style.css" rel="stylesheet"/>
-        <link href="prism.css" rel="stylesheet"/>
     </head>
 
     <body>
         <main>
             <div id="cmdcont" class="line prompt">
                 <p id="cmdprev" class="cmdcode"></p>
-                <p id="cmdline" class="cmdedit" contenteditable="plaintext-only" ></p>
+                <p id="cmdline" class="cmdedit" contenteditable="true" ></p>
                 <p id="cmdpost"></p>
             </div>
 
@@ -27,7 +34,7 @@
 
             <header>
                 <p id="banner">
-                    <span id="banner-title">cline v0.1.2 - </span>
+                    <span id="banner-title">cline v0.1.3 - </span>
                     <span id="banner-state">Stopped</span>
                 </p>
 
@@ -37,7 +44,7 @@
                 
                 <p>
                     <span class="btn" id="hdr-btn-reset" title="interrupt">↻</span>
-                    <span class="btn" id="hdr-btn-about" title="about">🛈</span>
+                    <span class="btn" id="hdr-btn-about" title="about">ℹ</span>
                 </p>
             </header>
         </main>
