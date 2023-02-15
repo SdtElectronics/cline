@@ -4,7 +4,7 @@
     --normal-bkgr: #fff;
     --normal-text: #111;
     --normal-rule: #f0f0f0;
-    --error-bkgr: #290000;
+    --error-bkgr: #FFF0F0;
     --error-text: #F00;
     --error-rule: #FFD6D6;
     --warn-bkgr: #FFFBE5;
@@ -70,6 +70,7 @@ header {
 }
 
 header>p {
+    position: relative;
     padding: 0.48rem 1.2rem 0.36rem 0.9rem;
     line-height: 1.32rem;
     white-space: nowrap;
@@ -113,6 +114,22 @@ a, a:visited {
     margin-left: -0.6rem;
     color: var(--bright-text);
     -webkit-text-stroke: 0.18px var(--bright-stroke);
+}
+
+#banner-mask {
+    position: absolute;
+    cursor: pointer;
+    height: 100%;
+    width: 100%;
+    top: 0px;
+    left: 0px;
+    display: none;
+}
+
+@media screen and (max-width: 75rem) {
+    #banner-mask {
+        display: block;
+    }
 }
 
 main {

@@ -253,6 +253,13 @@ hints.onmouseleave = () => {
     hints.innerHTML = "Tips";
 };
 
+document.getElementById("banner-mask").onclick = () => {
+    const top = tips.shift();
+    con.info("");
+    con.editRawHTML(con.lastElem(), top);
+    tips.push(top);
+};
+
 setInterval(() => service.keepalive(), 60000);
 
 document.body.setAttribute('spellcheck', false);
