@@ -49,7 +49,7 @@ export class Clined {
                 break;
             
             case 'd':
-                this.handler.ondata(evBody);
+                this.handler.ondata(evBody, "Value of last expression");
                 break;
  
             case 'e':
@@ -133,7 +133,7 @@ export class Clined {
                 break;
 
             case 'x':
-                this.handler.ondata(evBody);
+                this.handler.ondata(evBody, "stdout");
                 break;
 
             case 'y':

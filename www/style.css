@@ -42,6 +42,10 @@
     --button-hover: #999;
 }
 
+svg {
+    fill: currentColor;
+}
+
 html {
     width: 100vw;
 }
@@ -85,9 +89,10 @@ a, a:visited {
 }
 
 .btn {
-    font-size: 1.35rem;
+    display: inline-block;
+    height: 1rem;
     color: var(--button-plain);
-    margin: 0px 0.06rem;
+    margin-left: 0.06rem;
 }
 
 .btn:hover {
@@ -134,7 +139,7 @@ a, a:visited {
 
 main {
     width: 100vw;
-    padding-top: 2.4rem;
+    padding-top: 2.2rem;
     max-height: 100vh;
     display: flex;
     flex-direction: column-reverse;

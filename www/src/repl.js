@@ -77,11 +77,11 @@ const handler = {
         while(indent-- > 0) con.insertTab();
     },
 
-    ondata: msg => {
+    ondata: (msg, src) => {
         recoverSend();
         const trimmed = msg.trim();
         if(trimmed.length != 0) 
-            con.receive(Prism.highlight(trimmed, Prism.languages.cpp, 'cpp'));
+            con.receive(Prism.highlight(trimmed, Prism.languages.cpp, 'cpp'), src);
     },
 
     onrecoverable: (reason, detail) => {

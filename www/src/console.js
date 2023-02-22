@@ -145,8 +145,9 @@ export class Console {
         this.linehist.push();
     }
 
-    receive(msg) {
+    receive(msg, title) {
         this.lastElem_ = this.receivedTemplate.instantiate("");
+        this.lastElem_.title = title;
         this.editRawHTML(this.lastElem_, msg);
         this.hist.append(this.lastElem_);
     }
