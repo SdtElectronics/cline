@@ -33,15 +33,18 @@ using namespace std::string_view_literals;
 
 constexpr time_t blockTime = 10 /* s */;
 constexpr int idleTime = 1000*60*10 /*10min*/;
-enum Fds {tim = 0, msg, out, idCnt};
+enum Fds {ftim = 0, fmsg, fout, ferr, idCnt};
 
 int main(int argc, char *argv[]) {
     if(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) != 0) /* unreachable */;
 
     cline::Ring2 lineRec(4);
     lineRec.reserve(4096);
-    const auto lastWords = [&](std::string_view msg) {
-        const int efd = STDERR_FILENO;
+
+    const int efd = dup(STDERR_FILENO);
+    if(efd == -1) /* unlikely, but let's check */ exit(EXIT_FAILURE);
+
+    const auto lastWords = [&, efd](std::string_view msg) {
         char buf[16];
         int size = snprintf(buf, sizeof(buf), "cline[%d]: ", getpid());
         if(size > 0) vecWrite(efd, std::string_view(buf, size), msg,
@@ -59,18 +62,23 @@ int main(int argc, char *argv[]) {
 
     const int tfd = timer.init();
     if(tfd == -1) lastWords("Create timerfd failed\n"sv);
-    pollfds[tim].fd = tfd;
-    pollfds[tim].events = POLLIN;
+    pollfds[ftim].fd = tfd;
+    pollfds[ftim].events = POLLIN;
 
     const int sfd = usock.bind(getenv("CLINE_SOCK"));
     if(sfd < 0) lastWords("Bind unix socket failed\n"sv);
-    pollfds[msg].fd = sfd;
-    pollfds[msg].events = POLLIN | POLLHUP;
+    pollfds[fmsg].fd = sfd;
+    pollfds[fmsg].events = POLLIN | POLLHUP;
 
     const int ofd = redirFD(STDOUT_FILENO); // some dup magic to capture stdout
     if(ofd < 0) lastWords("Set up stdout capture failed\n"sv);
-    pollfds[out].fd = ofd;
-    pollfds[out].events = POLLIN;
+    pollfds[fout].fd = ofd;
+    pollfds[fout].events = POLLIN;
+
+    const int rfd = redirFD(STDERR_FILENO); // some dup magic to capture stderr
+    if(rfd < 0) lastWords("Set up stderr capture failed\n"sv);
+    pollfds[ferr].fd = rfd;
+    pollfds[ferr].events = POLLIN;
 
     if(signal(SIGPIPE, SIG_IGN) == SIG_ERR) ;
 
@@ -99,7 +107,7 @@ int main(int argc, char *argv[]) {
             /* EINTR would never happen unless SA_RESTART is set
                for EFAULT, EINVAL, ENOMEM, there's nothing we can do */
 
-        if(pollfds[tim].revents & POLLIN) {
+        if(pollfds[ftim].revents & POLLIN) {
             /* *  Interpreter no response after timeout or joined  * */
             clearFD(tfd);
             if(worker.isAlive()) { /* timeout */
@@ -112,7 +120,7 @@ int main(int argc, char *argv[]) {
                 usock.send(getMsgHdr(mJOINED));
             }
 
-        } else if(pollfds[msg].revents & POLLIN) {
+        } else if(pollfds[fmsg].revents & POLLIN) {
             /* * * * * * * *  New request from client  * * * * * * * */
             /* When processor is working, it owns the primary buffer */
             char* buf = worker.notJoined() ? secondaryBuf : primaryBuf;
@@ -165,13 +173,13 @@ int main(int argc, char *argv[]) {
                 usock.send(getMsgHdr(mREJECTED), "Unknown request type"sv);
             }
 
-        } else if(pollfds[msg].revents & POLLHUP) {
+        } else if(pollfds[fmsg].revents & POLLHUP) {
             /* * * * * * * * *  Client disconnected  * * * * * * * * */
 
             break;
             
-        } else if(pollfds[out].revents & POLLIN) {
-            /* * * * * * * * * *  Stdin loopback * * * * * * * * * * */
+        } else if(pollfds[fout].revents & POLLIN) {
+            /* * * * * * * * * * stdout loopback * * * * * * * * * * */
             /* Only when the code is interpreted it can print something
                to stdout, thus we don't care primaryBuf anymore now */
             int len = read(ofd, primaryBuf, buflen);
@@ -184,6 +192,17 @@ int main(int argc, char *argv[]) {
             }
 
             usock.send(getMsgHdr(mSTDOUT), std::string_view(primaryBuf, len));
+        } else if(pollfds[ferr].revents & POLLIN) {
+            /* * * * * * * * * * stderr loopback * * * * * * * * * * */
+            int len = read(rfd, primaryBuf, buflen);
+            if(len == buflen) {
+                usock.send(getMsgHdr(mREJECTED),
+                           "Too much data written to stderr. Discarding..."sv);
+                flushFD(rfd);
+                continue;
+            }
+
+            usock.send(getMsgHdr(mSTDERR), std::string_view(primaryBuf, len));
         } else {
             short err = 0;
             for(pollfd& p: pollfds) err |= p.revents;

@@ -137,7 +137,7 @@ export class Clined {
                 break;
 
             case 'y':
-                
+                this.handler.ondata(evBody, "stderr");
                 break;
 
             case 'z':
