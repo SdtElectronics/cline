@@ -10,6 +10,10 @@ void Ring2::reserve(std::size_t capacity) {
     secbuf_.reserve(capacity);
 }
 
+void Ring2::append(std::string_view sv) {
+    append(sv.data(), sv.size());
+}
+
 void Ring2::append(const char* begin, std::size_t len) {
     pribuf_.append(begin, begin + len);
     if((++size_) == capacity_) {

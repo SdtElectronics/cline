@@ -1,14 +1,13 @@
+#include <functional>
 #include <string_view>
 
-#include "./usock.h"
+#include "llvm/Support/raw_ostream.h"
+
+#include "./protocol.h"
 
 namespace cling {
     class Interpreter;
     class MetaProcessor;
-}
-
-namespace llvm {
-    class raw_ostream;
 }
 
 namespace cline {
@@ -27,15 +26,17 @@ class ClingCore {
     std::unique_ptr<cling::MetaProcessor> metaProcessor_;
 };
 
+using protocol::MsgType;
+
 class Processor {
   public:
-    Processor(USock& usock, cling::Interpreter& interpreter);
+    using Functor = std::function<void (MsgType, std::string_view)>;
+
+    Processor(cling::Interpreter& interpreter, Functor onProcessed);
 
     Processor* process(std::string_view buf) noexcept;
 
     void operator() ();
-
-    void checkWrite(int res);
 
   private:
     static constexpr int timeout_ = 10 /* s */;
@@ -44,11 +45,12 @@ class Processor {
     std::string metaRes_;
     llvm::raw_string_ostream sstrm_;
     ClingCore clingCore_;
+    Functor onProcessed_;
+
     std::string_view lo_;
     pthread_t* worker_;
-    USock& usock_;
 
-    void notifyErr(protocol::MsgType code, const char* msg);
+    void notifyErr(MsgType code, const char* msg);
 };
 
 } // namespace cline

@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 
 namespace cline {
@@ -8,6 +10,7 @@ class Ring2 {
 
     void reserve(std::size_t capacity);
 
+    void append(std::string_view sv);
     void append(const char* begin, std::size_t len);
 
     std::string_view head() const noexcept;

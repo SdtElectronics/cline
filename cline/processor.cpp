@@ -1,4 +1,3 @@
-#include <memory>
 #include <cxxabi.h>
 
 #include <pthread.h>
@@ -10,11 +9,8 @@
 #include "cling/Utils/Output.h"
 
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/raw_ostream.h"
 
 #include "./processor.h"
-#include "./protocol.h"
-#include "./utils.h"
 
 using namespace cline::protocol;
 
@@ -22,7 +18,9 @@ namespace cline {
 
 ClingCore::ClingCore(cling::Interpreter& interp, llvm::raw_ostream& output) {
     metaProcessor_.reset(new cling::MetaProcessor(interp, output));
-    llvm::install_fatal_error_handler(&cling::CompilationException::throwingHandler);
+    llvm::install_fatal_error_handler(
+        &cling::CompilationException::throwingHandler
+    );
 }
 
 ClingCore::~ClingCore() = default;
@@ -32,30 +30,17 @@ int ClingCore::interpret(std::string_view code) {
     return metaProcessor_->process(llvm::StringRef(code), compRes);
 }
 
-Processor::Processor(USock& usock, cling::Interpreter& core):
+Processor::Processor(cling::Interpreter& core, Functor onProcessed):
     intRes_(static_cast<llvm::raw_string_ostream&>(cling::outs()).str()),
     intErr_(static_cast<llvm::raw_string_ostream&>(cling::errs()).str()),
-    metaRes_(), sstrm_(metaRes_), clingCore_(core, sstrm_), usock_(usock) {
+    metaRes_(), sstrm_(metaRes_), clingCore_(core, sstrm_),
+    onProcessed_(onProcessed) {
         sstrm_.SetUnbuffered();
 }
 
 Processor* Processor::process(std::string_view buf) noexcept {
     lo_ = buf;
     return this;
-}
-
-void Processor::checkWrite(int res) {
-    if(res == -1) {
-        if(errno == EPIPE) {
-            /* Client disconnected */
-
-        } else {
-            /* weird shit happened to the socket */
-            /* better to just disconnect */
-            usock_.end();
-            // TODO: log this incident
-        }
-    }
 }
 
 void Processor::operator() () {
@@ -69,8 +54,7 @@ void Processor::operator() () {
     } catch (const std::bad_alloc& e) {
         /* posible oom, just terminate to be safe */
         std::string_view errMsg("Caught std::bad_alloc, terminating...");
-        checkWrite(usock_.send(getMsgHdr(mFATAL), errMsg));
-        usock_.end();
+        onProcessed_(mFATAL, errMsg);
         return;
     } catch(const std::exception& e) {
         return notifyErr(mEXCEPTION, e.what());
@@ -84,36 +68,36 @@ void Processor::operator() () {
 
     if(!metaRes_.empty()) {
         // TODO: send mLONG if message is too long (&below)
-        checkWrite(usock_.send(getMsgHdr(mINFO), metaRes_));
+        onProcessed_(mINFO, metaRes_);
         metaRes_.clear();
         return;
     }
 
     if(!intErr_.empty()) {
-        checkWrite(usock_.send(getMsgHdr(mGRAMMAR), intErr_));
+        onProcessed_(mGRAMMAR, intErr_);
         intErr_.clear();
         intRes_.clear();
         return;
     }
 
     if(!intRes_.empty()) {
-        checkWrite(usock_.send(getMsgHdr(mDATA), intRes_));
+        onProcessed_(mDATA, intRes_);
         intRes_.clear();
         return;
     }
 
     if(indent > 0) {
         std::string len = std::to_string(indent);
-        checkWrite(usock_.send(getMsgHdr(mCONTINUE), len));
+        onProcessed_(mCONTINUE, len);
         return;
     }
 
-    checkWrite(usock_.send(getMsgHdr(mACCEPED)));
+    onProcessed_(mACCEPED, "");
 }
 
 void Processor::notifyErr(MsgType code, const char* msg) {
     metaRes_.clear(); intRes_.clear(); intErr_.clear();
-    checkWrite(usock_.send(getMsgHdr(code), std::string_view(msg)));
+    onProcessed_(code, std::string_view(msg));
 }
 
 } // namespace cline
