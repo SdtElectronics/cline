@@ -1,7 +1,8 @@
 /* request code */
 const INTERPRET = 0;
-const SOFTRESET = 1;
-const DISCARDML = 2;
+const EMULINPUT = 1;
+const SOFTRESET = 2;
+const DISCARDML = 3;
 const KEEPALIVE = 9;
 
 export class Clined {
@@ -160,6 +161,10 @@ export class Clined {
 
     interpret(msg) {
         this.send(`${INTERPRET}${msg}`);
+    }
+
+    emulinput(msg) {
+        this.send(`${EMULINPUT}${msg}`);
     }
 
     softreset() {

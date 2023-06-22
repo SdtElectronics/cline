@@ -7,6 +7,7 @@ namespace cline::protocol {
 
 enum ReqType: char {
     rINTERPRET = '0',
+    rEMULINPUT,
     rSOFTRESET,
     rKEEPALIVE = '9'
 };

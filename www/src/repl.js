@@ -51,13 +51,13 @@ const wssProtocol = location.protocol == "https:" ? "wss:" : "ws:";
 const serviceAddr = `${wssProtocol}//${location.host}/ws`;
 
 const recoverSend = () => {
-    const lastContent = con.lastSent().firstElementChild;
+    const lastContent = con.pending().firstElementChild;
     lastContent.innerHTML = `
         ${cliPre.innerHTML}${lastContent.innerHTML}
     `.trim();
     cliPre.innerHTML = "";
-    con.resolve(con.lastSent());
-    con.recoverInput();
+    con.finalize();
+    // con.recoverInput();
     responded = true;
 };
 
@@ -71,9 +71,9 @@ const handler = {
     },
 
     oncontinue: indent => {
-        con.recoverInput();
+        // con.recoverInput();
         responded = true;
-        cliPre.innerHTML += con.removeLastSent() + '\n';
+        cliPre.innerHTML += con.withdraw() + '\n';
         while(indent-- > 0) con.insertTab();
     },
 
@@ -99,11 +99,13 @@ const handler = {
         cliDiv.style.display = "block";
         cliPre.innerHTML = "";
         con.recoverInput();
-        const hint = document.createElement("code");
-        hint.classList.add("smpcode");
-        cliTxt.append(hint);
         bannerConnect();
         responded = true;
+        if(cliTxt.innerHTML == "") {
+            const hint = document.createElement("code");
+            hint.classList.add("smpcode");
+            cliTxt.append(hint);
+        }
     },
 
     oninfo: msg => {
@@ -120,13 +122,13 @@ const handler = {
      * * * * * * * * * * * * * * * * */
     onjoined: () => {
         if(responded) return; // Normal join
-        con.reject(con.lastSent());
+        con.finalize();
         con.error("Execution aborted. Possible security policy violation"); 
         con.recoverInput();
     },
 
     onkilled: () => {
-        con.reject(con.lastSent());
+        con.finalize();
         con.recoverInput();
     },
 
@@ -135,7 +137,7 @@ const handler = {
     },
 
     onrejected: msg => {
-        con.reject(con.lastSent());
+        con.finalize();
         con.error(msg);
         con.recoverInput();
     },
@@ -215,9 +217,14 @@ const bannerConnect = () => {
 
 con.onsubmit = msg => {
     if(msg.trim().length != 0){
-        con.send(cliTxt.innerHTML, msg);
-        service.interpret(msg);
-        con.disableInput();
+        if(responded) {
+            con.pend(cliTxt.innerHTML, msg);
+            service.interpret(msg);
+        } else {
+            con.send(cliTxt.innerHTML, msg);
+            service.emulinput(msg + '\n');
+        }
+
         responded = false;
         if(!!inactiveTim) clearTimeout(inactiveTim);
         inactiveTim = setTimeout(() => {
@@ -230,8 +237,10 @@ con.onsubmit = msg => {
 };
 
 con.onchange = (msg, prevCaretPos) => {
-    cliTxt.innerHTML = Prism.highlight(msg, Prism.languages.cpp, 'cpp');
-    con.setCaretPosition(prevCaretPos);
+    if(responded) {
+        cliTxt.innerHTML = Prism.highlight(msg, Prism.languages.cpp, 'cpp');
+        con.setCaretPosition(prevCaretPos);
+    }
 };
 
 document.getElementById("hdr-btn-reset").onclick = () => service.softreset();

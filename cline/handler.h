@@ -45,6 +45,8 @@ class Handler {
     static constexpr size_t buflen = 64 * 1024;
     using Buf = axio::bufReader<buflen>;
 
+    static int emulateInput(std::string_view msg);
+
     const int blockTime_;
 
     unsigned int heartbeats = 1;

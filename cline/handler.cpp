@@ -90,14 +90,15 @@ bool Handler::timeout(axio::Emitter emitter) {
 }
 
 bool Handler::socketi(axio::Emitter emitter) {
+    static axio::ChanTX emulsin(STDIN_FILENO);
     std::string_view buf = read(emitter);
     if(!buf.data()) throw svcError("Failed to read data from socket\n");
+    if(buf.size() == buflen) {
+        respond(mREJECTED, "Invalid input: too long"sv);
+        return true;
+    }
     switch(buf[0]) {
         case rINTERPRET:
-        if(buf.size() == buflen) {
-            respond(mREJECTED, "Invalid input: too long"sv);
-            break;
-        }
         if(worker.notJoined() && worker.isAlive()) {
             respond(mPROCESSING);
         } else {
@@ -111,6 +112,10 @@ bool Handler::socketi(axio::Emitter emitter) {
             worker.spawn(processor_.process(code));
             timer.setTimeout(blockTime_);
         }
+        break;
+
+        case rEMULINPUT:
+        emulsin.send(buf.substr(1));
         break;
 
         case rSOFTRESET:

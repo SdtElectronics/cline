@@ -10,42 +10,10 @@ export class Console {
         this.linehist = new LineHist(historySize);
         this.linehist.push();
 
-        this.sendTemplate = new ElemTemplate(
+        this.lineTemplate = new ElemTemplate(
             "log",
-            (elem, msg) => {
-                elem.classList.add("line-pending");
-                elem.querySelector(".line-content").textContent = msg;
-            }
-        );
-
-        this.receivedTemplate = new ElemTemplate(
-            "log",
-            (elem, msg) => {
-                elem.classList.add("line-received");
-                elem.querySelector(".line-content").textContent = msg;
-            }
-        );
-
-        this.infoTemplate = new ElemTemplate(
-            "log",
-            (elem, msg) => {
-                elem.classList.add("line-info");
-                elem.querySelector(".line-content").textContent = msg;
-            }
-        );
-
-        this.warningTemplate = new ElemTemplate(
-            "log",
-            (elem, msg) => {
-                elem.classList.add("line-warning");
-                elem.querySelector(".line-content").textContent = msg;
-            }
-        );
-
-        this.errorTemplate = new ElemTemplate(
-            "log",
-            (elem, msg) => {
-                elem.classList.add("line-error");
+            (elem, type, msg) => {
+                elem.classList.add(type);
                 elem.querySelector(".line-content").textContent = msg;
             }
         );
@@ -116,61 +84,61 @@ export class Console {
         return this.lastElem_;
     }
 
-    lastSent() {
-        return this.lastSent_;
+    pending() {
+        return this.pending_;
     }
 
-    removeLastSent() {
-        const ret = this.lastSent_.firstElementChild.innerHTML;
-        this.lastSent_.remove();
+    pend(msg, hist, title) {
+        this.send(msg, hist, title, "line-pending");
+        this.pending_ = this.lastElem_;
+    }
+
+    finalize() {
+        this.pending_.classList.remove("line-pending");
+        this.pending_.classList.add("line-sent");
+    }
+
+    withdraw() {
+        const ret = this.pending_.firstElementChild.innerHTML;
+        this.pending_.remove();
         return ret;
     }
 
-    resolve(elem) {
-        elem.classList.remove("line-pending");
-        elem.classList.add("line-sent");
-    }
-
-    reject(elem) {
-        elem.classList.remove("line-pending");
-        elem.classList.add("line-sent");
-    }
-
-    send(msg, hist) {
-        this.lastElem_ = this.sendTemplate.instantiate("");
-        this.lastSent_ = this.lastElem_;
+    send(msg, hist, title, type = "line-sent") {
+        this.lastElem_ = this.lineTemplate.instantiate(type, "");
+        this.lastElem_.title = title;
         this.editRawHTML(this.lastElem_, msg);
         this.hist.append(this.lastElem_);
         this.linehist.edit(hist);
         this.linehist.push();
+        this.input.innerHTML = "";
     }
 
     receive(msg, title) {
-        this.lastElem_ = this.receivedTemplate.instantiate("");
+        this.lastElem_ = this.lineTemplate.instantiate("line-received", "");
         this.lastElem_.title = title;
         this.editRawHTML(this.lastElem_, msg);
         this.hist.append(this.lastElem_);
     }
 
     info(msg) {
-        this.lastElem_ = this.infoTemplate.instantiate(msg);
+        this.lastElem_ = this.lineTemplate.instantiate("line-info", msg);
         this.hist.append(this.lastElem_);
     }
 
     warning(msg) {
-        this.lastElem_ = this.warningTemplate.instantiate(msg);
+        this.lastElem_ = this.lineTemplate.instantiate("line-warning", msg);
         this.hist.append(this.lastElem_);
     }
 
     error(msg) {
-        this.lastElem_ = this.errorTemplate.instantiate(msg);
+        this.lastElem_ = this.lineTemplate.instantiate("line-error", msg);
         this.hist.append(this.lastElem_);
     }
 
     recoverInput() {
         this.input.contentEditable = "true";
         this.inputWrapper.style.filter = "";
-        this.input.innerHTML = "";
         this.input.focus();
     }
 
