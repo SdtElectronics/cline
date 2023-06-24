@@ -23,6 +23,11 @@ void Ring2::append(const char* begin, std::size_t len) {
     }
 }
 
+void Ring2::appendln(std::string_view sv) {
+    append(sv.data(), sv.size());
+    pribuf_.push_back('\n');
+}
+
 std::string_view Ring2::head() const noexcept {
     return pribuf_;
 }

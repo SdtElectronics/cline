@@ -108,7 +108,7 @@ bool Handler::socketi(axio::Emitter emitter) {
             }
 
             auto code = buf.substr(1);
-            lineRec_.append(code);
+            lineRec_.appendln(code);
             worker.spawn(processor_.process(code));
             timer.setTimeout(blockTime_);
         }

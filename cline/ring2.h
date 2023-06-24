@@ -12,6 +12,7 @@ class Ring2 {
 
     void append(std::string_view sv);
     void append(const char* begin, std::size_t len);
+    void appendln(std::string_view sv);
 
     std::string_view head() const noexcept;
 
