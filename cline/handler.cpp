@@ -77,12 +77,9 @@ bool Handler::timeout(axio::Emitter emitter) {
         }
         respond(mTIMEOUT);
     } else {               /* joined */
-        if(countThreads() != 1) {
-            /* also check here in case a ghost thread is created
-               and no further interpret request is received */
-            respond(mFATAL, "Untracked thread(s) detected"sv);
-            throw svcError("Untracked thread(s) detected\n");
-        }
+        /* also check here in case a ghost thread is created
+           and no further interpret request is received */
+        checkThreadsLimit(1);
         respond(mJOINED);
     }
 
@@ -102,10 +99,7 @@ bool Handler::socketi(axio::Emitter emitter) {
         if(worker.notJoined() && worker.isAlive()) {
             respond(mPROCESSING);
         } else {
-            if(countThreads() != 1) {
-                respond(mFATAL, "Untracked thread(s) detected"sv);
-                throw svcError("Untracked thread(s) detected\n");
-            }
+            checkThreadsLimit(1);
 
             auto code = buf.substr(1);
             lineRec_.appendln(code);
@@ -202,12 +196,15 @@ std::string_view Handler::read(axio::Emitter emitter) {
     return recv.read(emitter);
 }
 
-int Handler::countThreads() {
+void Handler::checkThreadsLimit(size_t limit) {
     char buf[256];
     int len = pread(taskChk_, buf, sizeof(buf), 0);
     if(len == -1) throw svcError("Failed to check threads\n");
     buf[len] = 0;
-    return atoi(buf);
+    if(atoi(buf) > limit) {
+        respond(mFATAL, "Untracked thread(s) detected"sv);
+        throw svcError("Untracked thread(s) detected\n");
+    }
 }
 
 }

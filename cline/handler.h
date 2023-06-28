@@ -39,7 +39,7 @@ class Handler {
 
     std::string_view read(axio::Emitter emitter);
 
-    int countThreads();
+    void checkThreadsLimit(size_t limit);
 
     enum Fds {ftim = 0, fmsg, fout, ferr, fdCnt};
     static constexpr size_t buflen = 64 * 1024;
