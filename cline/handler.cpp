@@ -35,10 +35,10 @@ Handler::Handler(int blockTime, int taskChk, Ring2& rec, cling::Interpreter& it)
 void Handler::startsvc(const char* unixaddr, int maxidle) {
     axio::Socket::UNIXAddress addr(unixaddr);
     if(!usock.connect(addr)) {
-        throw svcError("Failed to establish connection with gateway\n");
+        throw svcError("Failed to establish connection with gateway");
     }
     if(usock.send(getMsgHdr(mHELLO)) < 0) {
-        throw svcError("Failed to send handshake message\n");
+        throw svcError("Failed to send handshake message");
     }
 
     auto loopo = dispatcher.track<axio::ChanRX>(STDOUT_FILENO, O_DIRECT);
@@ -71,10 +71,7 @@ bool Handler::inactive() {
 bool Handler::timeout(axio::Emitter emitter) {
     timer.clear();
     if(worker.isAlive()) { /* timeout */
-        if(!worker.cancel()) {
-            respond(mFATAL, "Thread cancellation failed"sv);
-            throw svcError("Thread cancellation failed\n");
-        }
+        if(!worker.cancel()) fatal("Thread cancellation failed"sv);
         respond(mTIMEOUT);
     } else {               /* joined */
         /* also check here in case a ghost thread is created
@@ -89,7 +86,7 @@ bool Handler::timeout(axio::Emitter emitter) {
 bool Handler::socketi(axio::Emitter emitter) {
     static axio::ChanTX emulsin(STDIN_FILENO);
     std::string_view buf = read(emitter);
-    if(!buf.data()) throw svcError("Failed to read data from socket\n");
+    if(!buf.data()) throw svcError("Failed to read data from socket");
     if(buf.size() == buflen) {
         respond(mREJECTED, "Invalid input: too long"sv);
         return true;
@@ -117,10 +114,7 @@ bool Handler::socketi(axio::Emitter emitter) {
             /* avoid flooding */
             std::this_thread::sleep_for(std::chrono::milliseconds(300));
             timer.reset();     // it can't fail so don't check the rc
-            if(!worker.cancel()) {
-                respond(mFATAL, "Thread cancellation failed"sv);
-                throw svcError("Thread cancellation failed\n");
-            }
+            if(!worker.cancel()) fatal("Thread cancellation failed"sv);
             respond(mKILLED);
         } else {
             /* not in processing */
@@ -149,7 +143,7 @@ bool Handler::socketx(axio::Emitter emitter) {
 
 bool Handler::stdouti(axio::Emitter emitter) {
     std::string_view buf = read(emitter);
-    if(!buf.data()) throw svcError("Failed to read data from stdout\n");
+    if(!buf.data()) throw svcError("Failed to read data from stdout");
     if(buf.size() == buflen) {
         respond(mREJECTED,
                     "Too much data written to stdout. Discarding..."sv);
@@ -162,7 +156,7 @@ bool Handler::stdouti(axio::Emitter emitter) {
 
 bool Handler::stderri(axio::Emitter emitter) {
     std::string_view buf = read(emitter);
-    if(!buf.data()) throw svcError("Failed to read data from stderr\n");
+    if(!buf.data()) throw svcError("Failed to read data from stderr");
     if(buf.size() == buflen) {
         respond(mREJECTED,
                     "Too much data written to stderr. Discarding..."sv);
@@ -174,19 +168,19 @@ bool Handler::stderri(axio::Emitter emitter) {
 }
 
 bool Handler::pollerr(axio::Emitter emitter) {
-    throw svcError("poll received POLLERR\n");
+    throw svcError("poll received POLLERR");
     return false;
 }
 
 void Handler::respond(MsgType hdr) {
     if(usock.send(getMsgHdr(hdr)) == -1) {
-        throw svcError("Failed to reach to the client\n");
+        throw svcError("Failed to reach to the client");
     }
 }
 
 void Handler::respond(MsgType hdr, std::string_view body) {
     if(usock.send({ getMsgHdr(hdr), body }) == -1) {
-        throw svcError("Failed to reach to the client\n");
+        throw svcError("Failed to reach to the client");
     }
 }
 
@@ -199,12 +193,14 @@ std::string_view Handler::read(axio::Emitter emitter) {
 void Handler::checkThreadsLimit(size_t limit) {
     char buf[256];
     int len = pread(taskChk_, buf, sizeof(buf), 0);
-    if(len == -1) throw svcError("Failed to check threads\n");
+    if(len == -1) throw svcError("Failed to check threads");
     buf[len] = 0;
-    if(atoi(buf) > limit) {
-        respond(mFATAL, "Untracked thread(s) detected"sv);
-        throw svcError("Untracked thread(s) detected\n");
-    }
+    if(atoi(buf) > limit) fatal("Untracked thread(s) detected"sv);
+}
+
+void Handler::fatal(std::string_view msg) [[noreturn]] {
+    respond(mFATAL, msg);
+    throw svcError(msg.data());
 }
 
 }

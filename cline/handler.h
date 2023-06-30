@@ -39,6 +39,8 @@ class Handler {
 
     std::string_view read(axio::Emitter emitter);
 
+    void fatal(std::string_view msg) [[noreturn]];
+
     void checkThreadsLimit(size_t limit);
 
     enum Fds {ftim = 0, fmsg, fout, ferr, fdCnt};

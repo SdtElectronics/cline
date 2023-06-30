@@ -39,14 +39,14 @@ int main(int argc, char *argv[]) {
         char buf[16];
         int size = snprintf(buf, sizeof(buf), "cline[%d]: ", getpid());
         if(size > 0) axio::write(efd, {
-            std::string_view(buf, size), msg, "last processed lines:\n"sv,
+            std::string_view(buf, size), msg, "\nlast processed lines:\n"sv,
             lineRec.tail(), lineRec.head()
         });
         exit(EXIT_FAILURE);
     };
 
     const int pfd = open(getenv("CLINE_TASKS"), O_RDONLY, 0);
-    if(pfd == -1) lastWords("Open tasks monitor failed\n"sv);
+    if(pfd == -1) lastWords("Open tasks monitor failed"sv);
 
     cline::Worker worker;
 
@@ -57,24 +57,24 @@ int main(int argc, char *argv[]) {
     llvm::PrettyStackTraceProgram X(argc, argv);
 
     cling::Interpreter interpreter(argc, argv);
-    if (!interpreter.isValid()) lastWords("Set up interpreter failed\n"sv);
+    if (!interpreter.isValid()) lastWords("Set up interpreter failed"sv);
 
     /* ======================  Start event loop  ====================== */
     try {
         cline::Handler(blockTime, pfd, lineRec, interpreter)
         .startsvc(getenv("CLINE_SOCK"), idleTime);
     } catch(axio::InitError<axio::Timer>& e) {
-        lastWords("Failed to create timerfd \n"sv);
+        lastWords("Failed to create timerfd"sv);
     } catch(axio::InitError<axio::Socket>& e) {
-        lastWords("Failed to bind unix socket \n"sv);
+        lastWords("Failed to bind unix socket"sv);
     } catch(axio::InitError<axio::ChanRX>& e) {
-        lastWords("Failed to create pipe \n"sv);
+        lastWords("Failed to create pipe"sv);
     } catch(cline::svcError& e) {
         lastWords(e.what());
     } catch(cline::SySExcept& e) {
-        lastWords("Syscall error\n"sv); // TODO: say something about the error
+        lastWords("Syscall error"sv); // TODO: say something about the error
     } catch(std::exception& e) {
-        lastWords("Caught exception\n"sv); // TODO: same as above
+        lastWords("Caught exception"sv); // TODO: same as above
     }
 
     return 0;
